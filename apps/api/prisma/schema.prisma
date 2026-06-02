@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CategoryType {
+  income
+  expense
+  transfer
+}
+
+enum TransactionType {
+  income
+  expense
+  transfer
+  refund
+}
+
+enum TransactionSource {
+  manual
+  ai_parse
+  import
+}
+
+enum BudgetPeriod {
+  monthly
+}
+
+enum AiInputType {
+  text
+  attachment
+}
+
+enum AiJobStatus {
+  pending
+  processing
+  succeeded
+  failed
+  confirmed
+  discarded
+}
+
+model UserProfile {
+  id              String         @id @default(cuid())
+  authUserId      String         @unique
+  email           String?
+  displayName     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  categories      Category[]
+  transactions    Transaction[]
+  budgets         Budget[]
+  attachments     Attachment[]
+  aiParseJobs     AiParseJob[]
+}
+
+model Category {
+  id            String         @id @default(cuid())
+  userId        String
+  user          UserProfile    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  type          CategoryType
+  icon          String?
+  color         String         @default("#111111")
+  parentId      String?
+  parent        Category?      @relation("CategoryTree", fields: [parentId], references: [id])
+  children      Category[]     @relation("CategoryTree")
+  isSystem      Boolean        @default(false)
+  isArchived    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  transactions  Transaction[]
+  budgets       Budget[]
+
+  @@index([userId, type])
+}
+
+model Transaction {
+  id                 String             @id @default(cuid())
+  userId             String
+  user               UserProfile        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type               TransactionType
+  amountMinor        Int
+  transactionDate    DateTime
+  merchant           String?
+  description        String?
+  categoryId         String?
+  category           Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags               String[]           @default([])
+  isIncludedInBudget Boolean            @default(true)
+  source             TransactionSource  @default(manual)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  deletedAt          DateTime?
+  attachments        Attachment[]
+  aiParseJobs        AiParseJob[]
+
+  @@index([userId, transactionDate])
+  @@index([userId, deletedAt])
+}
+
+model Budget {
+  id                   String       @id @default(cuid())
+  userId               String
+  user                 UserProfile  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                 String
+  period               BudgetPeriod @default(monthly)
+  month                DateTime
+  amountMinor          Int
+  categoryId           String?
+  category             Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  alertThreshold       Int          @default(80)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@index([userId, month])
+}
+
+model Attachment {
+  id             String        @id @default(cuid())
+  userId         String
+  user           UserProfile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactionId  String?
+  transaction    Transaction?  @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  objectKey      String
+  fileName       String
+  mimeType       String
+  sizeBytes      Int
+  createdAt      DateTime      @default(now())
+  aiParseJobs    AiParseJob[]
+
+  @@index([userId])
+}
+
+model AiParseJob {
+  id                   String        @id @default(cuid())
+  userId               String
+  user                 UserProfile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider             String
+  inputType            AiInputType
+  inputText            String?
+  inputAttachmentId    String?
+  inputAttachment      Attachment?   @relation(fields: [inputAttachmentId], references: [id], onDelete: SetNull)
+  status               AiJobStatus   @default(pending)
+  resultJson           Json?
+  errorMessage         String?
+  createdTransactionId String?
+  createdTransaction   Transaction?  @relation(fields: [createdTransactionId], references: [id], onDelete: SetNull)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([userId, status])
+}

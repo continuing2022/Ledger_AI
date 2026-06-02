@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ai-finance-subscriptions",
-    "slug": "ai-finance-subscriptions",
+    "name": "ai-finance",
+    "slug": "ai-finance",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
