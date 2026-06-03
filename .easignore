@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+
+apps/api/node_modules/
+apps/api/dist/
+apps/api/*.log
+apps/api/*.tsbuildinfo

@@ -24,7 +24,10 @@
     "api:dev": "npm --prefix apps/api run start:dev",
     "api:build": "npm --prefix apps/api run build",
     "api:prisma:generate": "npm --prefix apps/api run prisma:generate",
-    "api:prisma:migrate": "npm --prefix apps/api run prisma:migrate"
+    "api:prisma:migrate": "npm --prefix apps/api run prisma:migrate",
+    "api:prisma:migrate:deploy": "npm --prefix apps/api run prisma:migrate:deploy",
+    "eas:build:ios": "eas build --platform ios --profile production",
+    "eas:submit:ios": "eas submit --platform ios --latest"
   },
   "private": true
 }
