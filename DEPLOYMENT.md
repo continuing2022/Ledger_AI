@@ -54,6 +54,7 @@ npm run start
 ```
 
 Required backend environment variables are listed in `apps/api/.env.production.example`.
+On Render, do not hard-code `PORT`; Render injects it automatically. The API binds to `0.0.0.0` so Render can route public traffic to the service.
 
 After deploying, verify:
 
