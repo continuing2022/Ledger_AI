@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState, type ComponentProps } from 'react';
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActionButton, Card, DataStateBanner, LabeledField, Pill, SectionHeader } from '../components/Primitives';
 import { formatCurrency, palette, spacing, typography } from '../design/theme';
 import {
@@ -23,6 +23,7 @@ type UploadedBillImage = {
   fileName: string;
   mimeType: string;
   sizeBytes: number;
+  previewUri: string;
   file: File;
 };
 
@@ -154,6 +155,14 @@ function AiEntry({ categories }: { categories: Category[] }) {
     () => expenseCategories.find((item) => item.id === categoryId)?.name ?? candidate?.categoryName ?? '未分类',
     [candidate?.categoryName, categoryId, expenseCategories],
   );
+
+  useEffect(() => {
+    return () => {
+      if (typeof URL !== 'undefined' && selectedImage?.previewUri.startsWith('blob:')) {
+        URL.revokeObjectURL(selectedImage.previewUri);
+      }
+    };
+  }, [selectedImage?.previewUri]);
 
   const handleParse = async () => {
     setLoading(true);
@@ -321,9 +330,14 @@ function AiEntry({ categories }: { categories: Category[] }) {
         />
         {selectedImage ? (
           <View style={styles.uploadPreview}>
+            <Image
+              accessibilityLabel={`已选择图片 ${selectedImage.fileName}`}
+              source={{ uri: selectedImage.previewUri }}
+              style={styles.uploadPreviewImage}
+            />
             <View style={styles.uploadPreviewCopy}>
-              <Ionicons name="image-outline" size={18} color={palette.ink} />
               <Text style={styles.uploadPreviewText}>{selectedImage.fileName}</Text>
+              <Text style={styles.uploadPreviewMeta}>{formatFileSize(selectedImage.sizeBytes)}</Text>
             </View>
             <Pressable
               accessibilityRole="button"
@@ -574,10 +588,18 @@ function pickBillImage(): Promise<UploadedBillImage | null> {
         fileName: file.name,
         mimeType: file.type,
         sizeBytes: file.size,
+        previewUri: URL.createObjectURL(file),
       });
     };
     inputElement.click();
   });
+}
+
+function formatFileSize(sizeBytes: number) {
+  if (sizeBytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
+  }
+  return `${(sizeBytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function DatePickerField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
@@ -834,22 +856,34 @@ const styles = StyleSheet.create({
     borderColor: palette.ink,
     borderWidth: 2,
     flexDirection: 'row',
+    gap: spacing.md,
     justifyContent: 'space-between',
     marginTop: spacing.md,
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
+    minHeight: 88,
+    padding: spacing.sm,
+  },
+  uploadPreviewImage: {
+    backgroundColor: palette.surface,
+    borderColor: palette.ink,
+    borderWidth: 2,
+    height: 68,
+    resizeMode: 'cover',
+    width: 92,
   },
   uploadPreviewCopy: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     flex: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs,
     minWidth: 0,
   },
   uploadPreviewText: {
     color: palette.ink,
-    flex: 1,
     fontSize: typography.small,
+    fontWeight: '900',
+  },
+  uploadPreviewMeta: {
+    color: palette.muted,
+    fontSize: typography.tiny,
     fontWeight: '900',
   },
   uploadRemoveButton: {
